@@ -6,7 +6,7 @@ import { usePokemonVectorDatabase, debounceAsyncFunc } from './lib'
 import CommandPalette, { getItemIndex } from 'react-cmdk'
 import ReactMarkdown from 'react-markdown'
 import { useCallback, useState } from 'react'
-import { LoadingIcon, PokemonIcon } from './icon'
+import { LoadingIcon, PokemonIcon } from '../components/icon'
 
 export default function Home() {
   const { instance, fetcher, isFetching } = usePokemonVectorDatabase()

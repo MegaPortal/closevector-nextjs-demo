@@ -8,6 +8,10 @@ This demo is a rewritten version of [postgres-pgvector](https://github.com/verce
 
 https://closevector-nextjs-demo.vercel.app/
 
+![1|300X300](./screenshots/1.png)
+![2|300X300](./screenshots/2.png)
+![3|300X300](./screenshots/3.png)
+
 ## How to Use
 
 You can choose from one of the following two methods to use this repository:
