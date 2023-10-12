@@ -4,6 +4,8 @@ A Next.js template that uses [CloseVector](https://closevector-docs.getmegaporta
 
 This demo is a rewritten version of [postgres-pgvector](https://github.com/vercel/examples/tree/main/storage/postgres-pgvector#vercel-postgres--prisma--pgvector-nextjs-starter) provided by Vercel.
 
+This demo aims to demonstrate how to use [CloseVector](https://closevector-docs.getmegaportal.com/) in Next.js, and how to use [CloseVector](https://closevector-docs.getmegaportal.com/) to implement a simple search engine. Also, it demonstrates the inserting performance of [CloseVector](https://closevector-docs.getmegaportal.com/)
+
 ## Demo
 
 https://closevector-nextjs-demo.vercel.app/
