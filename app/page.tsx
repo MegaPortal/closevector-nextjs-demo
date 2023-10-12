@@ -5,13 +5,13 @@ import Image from 'next/image'
 import { usePokemonVectorDatabase, debounceAsyncFunc } from './lib'
 import CommandPalette, { getItemIndex } from 'react-cmdk'
 import ReactMarkdown from 'react-markdown'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { LoadingIcon, PokemonIcon } from '../components/icon'
 
 export default function Home() {
   const { instance, fetcher, isFetching } = usePokemonVectorDatabase()
   const [searching, setSearching] = useState(false)
-  const [search, setSearch] = useState('')
+  const [search, setSearch] = useState('water')
   const [results, setResults] = useState<
     Awaited<ReturnType<typeof similaritySearch>>
   >(undefined)
@@ -46,6 +46,12 @@ export default function Home() {
         })
     }
   }
+
+  useEffect(() => {
+    if (!isFetching) {
+      similaritySearch(search)
+    }
+  }, [isFetching, search, similaritySearch])
 
   const filteredItems = (() => {
     if (searching) {
@@ -153,7 +159,7 @@ number: ${r?.metadata?.number}, generation: ${
           setOpen(isOpen)
         }}
         search={search}
-        isOpen={open}
+        isOpen={ !isFetching && open}
         page={'root'}
       >
         <CommandPalette.Page id="root">
