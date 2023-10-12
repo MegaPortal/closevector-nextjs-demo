@@ -1,6 +1,114 @@
+'use client'
+
+import 'react-cmdk/dist/cmdk.css'
 import Image from 'next/image'
+import { usePokemonVectorDatabase, debounceAsyncFunc } from './lib'
+import CommandPalette, { getItemIndex } from 'react-cmdk'
+import ReactMarkdown from 'react-markdown'
+import { useCallback, useState } from 'react'
+import { LoadingIcon, PokemonIcon } from './icon'
 
 export default function Home() {
+  const { instance, fetcher, isFetching } = usePokemonVectorDatabase()
+  const [searching, setSearching] = useState(false)
+  const [search, setSearch] = useState('')
+  const [results, setResults] = useState<
+    Awaited<ReturnType<typeof similaritySearch>>
+  >(undefined)
+  const [open, setOpen] = useState(true)
+
+  const similaritySearch = useCallback(
+    debounceAsyncFunc(async function (input: string) {
+      try {
+        setSearching(true)
+        let results = await instance?.similaritySearch(input, 100)
+        setResults(results)
+        setSearching(false)
+        return results
+      } catch (e) {
+        console.error(e)
+        setSearching(false)
+      }
+    }, 500),
+    [instance],
+  )
+
+  function searchChangeCallback(search: string) {
+    setSearch(search)
+    if (instance) {
+      setSearching(true)
+      similaritySearch(search)
+        .then((results) => {
+          setResults(results)
+        })
+        .finally(() => {
+          setSearching(false)
+        })
+    }
+  }
+
+  const filteredItems = (() => {
+    if (searching) {
+      return [
+        {
+          heading: 'Loading',
+          id: 'loading',
+          items: [
+            {
+              id: 1 + '',
+              children: `searching from ${instance?.index.getCurrentCount()} documents`,
+              showType: false,
+            },
+          ],
+        },
+      ]
+    } else {
+      if (results?.length) {
+        return [
+          {
+            heading: 'Results',
+            id: 'results',
+            items: (results || []).map((r, index) => {
+              return {
+                id: index + '',
+                // width adjusted
+                children: (
+                  <div className="w-full rounded-lg bg-gradient-to-br from-indigo-900 via-indigo-800 to-indigo-400 p-4 border-t border-indigo-500 border-b border-indigo-500">
+                    <h2 className="text-lg font-semibold leading-tight text-white">
+                      <b>{r?.pageContent}</b>
+                    </h2>
+                    <p className="text-sm text-white/80 font-medium mt-1">
+                      <ReactMarkdown>{`
+type: ${[r?.metadata?.type1, r?.metadata?.type2].filter((x) => x).join(', ')}
+
+hp: ${r?.metadata?.hp}, attack: ${r?.metadata?.attack}, defense: ${
+                        r?.metadata?.defense
+                      }, spAtk: ${r?.metadata?.spAtk}, spDef: ${
+                        r?.metadata?.spDef
+                      }, speed: ${r?.metadata?.speed}
+
+number: ${r?.metadata?.number}, generation: ${
+                        r?.metadata?.generation
+                      }, legendary: ${r?.metadata?.legendary}, total: ${
+                        r?.metadata?.total
+                      }
+                      `}</ReactMarkdown>
+                    </p>
+                  </div>
+                ),
+                showType: false,
+                // icon: 'RectangleStackIcon',
+                closeOnSelect: false,
+              }
+            }),
+          },
+        ]
+      } else {
+        return []
+      }
+    }
+  })()
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-between p-24">
       <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
@@ -11,37 +119,65 @@ export default function Home() {
         <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
           <a
             className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
+            href="https://closevector.getmegaportal.com/"
             target="_blank"
             rel="noopener noreferrer"
           >
             By{' '}
             <Image
-              src="/vercel.svg"
+              src="/closevector.svg"
               alt="Vercel Logo"
               className="dark:invert"
-              width={100}
+              width={24}
               height={24}
               priority
-            />
+            />{' '}
+            CloseVector
           </a>
         </div>
       </div>
 
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
+      <div
+        onClick={() => setOpen(true)}
+        className="hover:bg-gray-100 dark:hover:bg-gray-800 font-semibold py-2 px-4 border border-gray-400 dark:border-gray-900 rounded shadow flex"
+      >
+        {isFetching ? <LoadingIcon /> : <PokemonIcon />} &nbsp;
+        <span>Start Searching</span>
       </div>
+
+      <CommandPalette
+        onChangeSearch={(search) => {
+          searchChangeCallback(search)
+        }}
+        onChangeOpen={(isOpen) => {
+          setOpen(isOpen)
+        }}
+        search={search}
+        isOpen={open}
+        page={'root'}
+      >
+        <CommandPalette.Page id="root">
+          {filteredItems.length ? (
+            filteredItems.map((list) => (
+              <CommandPalette.List key={list.id} heading={list.heading}>
+                {list.items.map(({ id, ...rest }) => (
+                  <CommandPalette.ListItem
+                    key={id}
+                    index={getItemIndex(filteredItems, id)}
+                    {...rest}
+                  />
+                ))}
+              </CommandPalette.List>
+            ))
+          ) : (
+            <CommandPalette.FreeSearchAction />
+          )}
+        </CommandPalette.Page>
+      </CommandPalette>
 
       <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
         <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
+          href="https://closevector-docs.getmegaportal.com/"
           className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
           target="_blank"
           rel="noopener noreferrer"
@@ -53,46 +189,12 @@ export default function Home() {
             </span>
           </h2>
           <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
+            Find in-depth information about CloseVector features and API.
           </p>
         </a>
 
         <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Explore the Next.js 13 playground.
-          </p>
-        </a>
-
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
+          href="https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2FMegaPortal%2Fclosevector-nextjs-demo"
           className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
           target="_blank"
           rel="noopener noreferrer"
