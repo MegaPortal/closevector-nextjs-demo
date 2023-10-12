@@ -14,6 +14,15 @@ https://closevector-nextjs-demo.vercel.app/
 
 ## How to Use
 
+
+### Getting CloseVector Access Key
+
+If you want to use the embedding API provided by CloseVector, as demonstrated in this demo, you need to obtain an access key from [CloseVector](https://closevector.getmegaportal.com/).
+
+Alternatively, you can implement your own embedding using the OpenAI API by extending the class [CloseVectorEmbeddings](https://closevector-docs.getmegaportal.com/docs/api/closevector-web#closevectorembeddings) and passing it to `useCloseVectorManager`.
+
+### Deploying
+
 You can choose from one of the following two methods to use this repository:
 
 ### One-Click Deploy
